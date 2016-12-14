@@ -10,10 +10,12 @@ library(data.table)
 library(magrittr)
 library(plyr)
 library(dplyr)
+library(rvest)
+library(stringr)
 
 shinyServer(function(input, output) {
   
-  options(shiny.maxRequestSize=50*1024^2) 
+  options(shiny.maxRequestSize = 50 * 1024 ^ 2) 
 
   datafile <- reactive({
     inFile1 <- input$mainfile
@@ -22,8 +24,18 @@ shinyServer(function(input, output) {
     } else {
       inFile1 %>% rowwise() %>%
         do({
-          read.csv(.$datapath, stringsAsFactors = FALSE, fileEncoding = "UTF-8")
+          read.csv(.$datapath, stringsAsFactors = FALSE, fileEncoding = "big5")
         }) %>% return
+    }
+  })
+  
+  stocking.file <- reactive({
+    if (is.null (input$stockfile)) {
+      return (NULL)
+    } else {
+      inFile2 <- input$stockfile
+      read.csv(inFile2$datapath, stringsAsFactors = FALSE,
+               fileEncoding = "big5") %>% setDT %>% return
     }
   })
   
@@ -44,6 +56,19 @@ shinyServer(function(input, output) {
                            訂單日期 <= input$SelectDate[2]]
       tmpfile2 <- tmpfile2[訂單狀態 != "已取消", .(sales = sum(數量)),
                                .(商品名稱, 選項)]
+    }
+  })
+  
+  AllProductName <- reactive({
+    if (is.null(stocking.file())) {
+      return (NULL)
+    } else {
+      AllPage <- paste0("http://www.bonnyread.com.tw/products?page=", 1 : 100)
+      lapply(AllPage, function(k) {
+        k %>% read_html %>%
+          html_nodes(xpath = "//div[@class='title text-primary-color']") %>%
+          html_text(trim = TRUE)
+      }) %>% unlist %>% return
     }
   })
   
@@ -68,4 +93,21 @@ shinyServer(function(input, output) {
         return
     }
   })
+  
+  output$hugecake <- renderDataTable({
+    if (is.null (stocking.file())) {
+      return (NULL)
+    } else {
+      pro.stock.file <- stocking.file()
+      pro.threshold <- as.numeric(input$threshold)
+      Name.On.Website <- AllProductName()
+      Name.On.Website <- str_replace_all(Name.On.Website,
+                                         "(\\[.*?\\])|\\【.*?\\】", "") %>% trimws
+      lowID <- pro.stock.file[選項 == "" & 庫存.數量 <= pro.threshold, 商品名稱]
+      lowID <- str_replace_all(lowID, "(\\[.*?\\])|\\【.*?\\】", "") %>% trimws
+      lowID <- lowID[lowID %in% Name.On.Website]
+      data.table(ID = seq_along(lowID), ProductName = lowID) %>% return
+    }
+  })
+  
 })

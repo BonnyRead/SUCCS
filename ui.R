@@ -15,16 +15,22 @@ shinyUI(fluidPage(
   # Sidebar with a slider input for number of bins
   sidebarLayout(
     sidebarPanel(
-      fileInput("mainfile","資料輸入", multiple = TRUE),
-      radioButtons("ProcessingType", "使用型態", c("銷售數量", "未出貨數量")),
-      uiOutput("SpeceficDate", inline = TRUE),
-      textInput("itemname", "商品名稱"),
-      textInput("spec", "顏色規格")
+      selectInput("ProcessingType", "使用型態", 
+                  c("銷售數量", "未出貨數量", "存貨過低警示")),
+      conditionalPanel(condition = "input.ProcessingType != '存貨過低警示'",
+                       fileInput("mainfile", "資料輸入", multiple = TRUE),
+                       uiOutput("SpeceficDate", inline = TRUE),
+                       textInput("itemname", "商品名稱"),
+                       textInput("spec", "顏色規格")),
+      conditionalPanel(condition = "input.ProcessingType == '存貨過低警示'",
+                       fileInput("stockfile", "資料輸入", width = "100%"),
+                       textInput("threshold", "警示門檻", width = "100%"))
     ),
 
     # Show a plot of the generated distribution
     mainPanel(
-      dataTableOutput("minicake")
+      dataTableOutput("minicake"),
+      dataTableOutput("hugecake")
     )
   )
 ))
