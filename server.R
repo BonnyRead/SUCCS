@@ -22,10 +22,9 @@ shinyServer(function(input, output) {
     if (is.null (inFile1)) {
       return (NULL)
     } else {
-      inFile1 %>% rowwise() %>%
-        do({
-          read.csv(.$datapath, stringsAsFactors = FALSE, fileEncoding = "big5")
-        }) %>% return
+      lapply(inFile1$datapath, function(k) {
+        read.csv(k, fileEncoding = "big5", stringsAsFactors = FALSE)} ) %>%
+        rbind.fill %>% setDT %>% return
     }
   })
   
@@ -77,6 +76,7 @@ shinyServer(function(input, output) {
       return (NULL)
     } else {
       date.summary <- datafile() %>% setDT
+      date.summary[, 訂單日期 := as.Date(訂單日期)]
       maxdate <- date.summary[, max(訂單日期)]
       mindate <- date.summary[, min(訂單日期)]
       dateRangeInput("SelectDate", "選擇日期", start = mindate, end = maxdate,
@@ -107,6 +107,20 @@ shinyServer(function(input, output) {
       lowID <- str_replace_all(lowID, "(\\[.*?\\])|\\【.*?\\】", "") %>% trimws
       lowID <- lowID[lowID %in% Name.On.Website]
       data.table(ID = seq_along(lowID), ProductName = lowID) %>% return
+    }
+  })
+  
+  output$mediumcake <- renderDataTable({
+    if (is.null (datafile())) {
+      return (NULL)
+    } else {
+      Z.rack <- datafile() %>% setDT()
+      Z.rack <- Z.rack[訂單狀態 != "已取消" & 訂單日期 >= Sys.Date() -15 & 
+                   訂單日期 <= Sys.Date() - 1, .(ranking = sum(數量)),
+                   .(商品名稱, 選項)] %>% setorder(-ranking) %>% .[1 : 50]
+      Z.rack$PID <- paste0("Za", rep(1 : 5, each = 10), "-",
+                           rep(1 : 10, times = 5))
+      Z.rack[, c("PID", "商品名稱", "選項"), with = FALSE] %>% return
     }
   })
   

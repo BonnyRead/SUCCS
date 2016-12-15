@@ -16,9 +16,11 @@ shinyUI(fluidPage(
   sidebarLayout(
     sidebarPanel(
       selectInput("ProcessingType", "使用型態", 
-                  c("銷售數量", "未出貨數量", "存貨過低警示")),
+                  c("銷售數量", "未出貨數量", "存貨過低警示", "Z貨架檢驗")),
       conditionalPanel(condition = "input.ProcessingType != '存貨過低警示'",
-                       fileInput("mainfile", "資料輸入", multiple = TRUE),
+                       fileInput("mainfile", "資料輸入", multiple = TRUE)),
+      conditionalPanel(condition = "input.ProcessingType == '銷售數量' |
+                       input.ProcessingType == '未出貨數量'",
                        uiOutput("SpeceficDate", inline = TRUE),
                        textInput("itemname", "商品名稱"),
                        textInput("spec", "顏色規格")),
@@ -30,7 +32,9 @@ shinyUI(fluidPage(
     # Show a plot of the generated distribution
     mainPanel(
       dataTableOutput("minicake"),
-      dataTableOutput("hugecake")
+      dataTableOutput("hugecake"),
+      conditionalPanel(condition = "input.ProcessingType == 'Z貨架檢驗'",
+      dataTableOutput("mediumcake"))
     )
   )
 ))
