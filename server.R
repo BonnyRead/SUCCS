@@ -117,7 +117,14 @@ shinyServer(function(input, output) {
       Z.rack <- datafile() %>% setDT()
       Z.rack <- Z.rack[訂單狀態 != "已取消" & 訂單日期 >= Sys.Date() -15 & 
                    訂單日期 <= Sys.Date() - 1, .(ranking = sum(數量)),
-                   .(商品名稱, 選項)] %>% setorder(-ranking) %>% .[1 : 50]
+                   .(商品名稱, 選項)] %>% setorder(-ranking) 
+      if (input$ExcludeItem != "") {
+        exclude.item <- gsub(",", "|", input$ExcludeItem)
+        Z.rack <- Z.rack[!grepl(exclude.item, 商品名稱)]
+        Z.rack <- Z.rack[1 : 50]
+      } else {
+        Z.rack <- Z.rack[1 : 50]
+      }
       Z.rack$PID <- paste0("Za", rep(1 : 5, each = 10), "-",
                            rep(1 : 10, times = 5))
       Z.rack[, c("PID", "商品名稱", "選項"), with = FALSE] %>% return

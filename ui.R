@@ -26,7 +26,10 @@ shinyUI(fluidPage(
                        textInput("spec", "顏色規格")),
       conditionalPanel(condition = "input.ProcessingType == '存貨過低警示'",
                        fileInput("stockfile", "資料輸入", width = "100%"),
-                       textInput("threshold", "警示門檻", width = "100%"))
+                       textInput("threshold", "警示門檻", width = "100%")),
+      conditionalPanel(condition = "input.ProcessingType == 'Z貨架檢驗'",
+                       textInput("ExcludeItem", "排除商品"),
+                       helpText("請用,分隔商品名稱"))
     ),
 
     # Show a plot of the generated distribution
